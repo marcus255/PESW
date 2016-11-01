@@ -30,7 +30,9 @@
 #define PB1_PIN    10                     // Pushbutton 1 pin.
 
 static volatile int eMode;                // Selected energy mode.
+static volatile int pushButtonCounter;	  // Push button count.
 static volatile int msCountDown;          // Time left before entering energy mode.
+static volatile int msCountDownLCD;       // Time left before turning LCD off.
 volatile uint32_t msTicks;                // Counts 1ms timeTicks.
 
 // Local function.
@@ -125,10 +127,10 @@ uint32_t LCD_SelectState(void)
   SegmentLCD_Write("\f");
   SegmentLCD_Disable();
 
-  // Disable GPIO.
-  NVIC_DisableIRQ(GPIO_ODD_IRQn);
+  // Disable GPIO PB1_PIN.
+  //NVIC_DisableIRQ(GPIO_ODD_IRQn);
   NVIC_DisableIRQ(GPIO_EVEN_IRQn);
-  GPIO_PinModeSet(PB0_PORT, PB0_PIN, gpioModeDisabled, 1);
+  //GPIO_PinModeSet(PB0_PORT, PB0_PIN, gpioModeDisabled, 1);
   GPIO_PinModeSet(PB1_PORT, PB1_PIN, gpioModeDisabled, 1);
 
   // Disable systick timer.
@@ -145,6 +147,10 @@ uint32_t LCD_SelectState(void)
 void SysTick_Handler(void)
 {
   msTicks++; // increment counter necessary in Delay().
+  if (msCountDownLCD == 0)
+	  SegmentLCD_Disable();
+  else
+	  msCountDownLCD--;
 }
 
 /**************************************************************************//**
@@ -167,11 +173,10 @@ void GPIO_ODD_IRQHandler(void)
   // Acknowledge interrupt.
   GPIO_IntClear(1 << 9);
 
-  if ( eMode > 0)
-  {
-    eMode--;
-    msCountDown = TIMEOUT;
-  }
+  pushButtonCounter++;
+  SegmentLCD_Init(false);
+  SegmentLCD_Number(pushButtonCounter);
+  msCountDownLCD = TIMEOUT;
 }
 
 /**************************************************************************//**
