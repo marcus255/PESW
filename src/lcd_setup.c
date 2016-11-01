@@ -32,6 +32,7 @@
 static volatile int eMode;                // Selected energy mode.
 static volatile int msCountDown;          // Time left before entering energy mode.
 volatile uint32_t msTicks;                // Counts 1ms timeTicks.
+volatile uint32_t secTimer;
 
 // Local function.
 void Delay(uint32_t dlyTicks);
@@ -123,7 +124,7 @@ uint32_t LCD_SelectState(void)
 
   // Clear LCD display.
   SegmentLCD_Write("\f");
-  SegmentLCD_Disable();
+  //SegmentLCD_Disable();
 
   // Disable GPIO.
   NVIC_DisableIRQ(GPIO_ODD_IRQn);
@@ -132,7 +133,13 @@ uint32_t LCD_SelectState(void)
   GPIO_PinModeSet(PB1_PORT, PB1_PIN, gpioModeDisabled, 1);
 
   // Disable systick timer.
-  SysTick ->CTRL = 0;
+  // SysTick ->CTRL = 0;
+
+  // Setup SysTick Timer for 1 sec interrupts.
+    if (SysTick_Config(SystemCoreClockGet()))
+    {
+  	EFM_ASSERT(false);
+    }
 
   // return desired energy mode.
   return eMode;
@@ -144,7 +151,8 @@ uint32_t LCD_SelectState(void)
  *****************************************************************************/
 void SysTick_Handler(void)
 {
-  msTicks++; // increment counter necessary in Delay().
+  secTimer++;
+  SegmentLCD_Number(secTimer);
 }
 
 /**************************************************************************//**
